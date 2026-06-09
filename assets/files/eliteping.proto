@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+// ElitePing native core (elitecore.dll) — gRPC control service.
+// Server: 127.0.0.1:18458, plaintext (grpc.credentials.createInsecure()), no auth.
+//
+// Reconstructed from the client's wire codec in app.asar (@bufbuild/protobuf/wire).
+// Field names / numbers / types / `repeated` and the method<->message mapping are
+// EXACT (recovered from the encode tags: tag = (field_number << 3) | wire_type).
+// Message *type names* and the empty-request names are NOT preserved in the build;
+// they are reconstructed by convention (field layouts are exact regardless).
+
+package grpc;
+
+// ---- Service ---------------------------------------------------------------
+// All RPCs are unary. Every method returns Response except GetGeoInfo (GeoInfo).
+service VpnService {
+  rpc ConnectOvpn            (ConnectOvpnRequest)            returns (Response);
+  rpc DisconnectOvpn         (DisconnectOvpnRequest)         returns (Response);
+  rpc ConnectL2TP            (ConnectL2tpRequest)            returns (Response);
+  rpc DisconnectL2TP         (DisconnectL2tpRequest)         returns (Response);
+  rpc ConnectPPTP            (ConnectPptpRequest)            returns (Response);
+  rpc DisconnectPPTP         (DisconnectPptpRequest)         returns (Response);
+  rpc GetConnectionStatus    (GetConnectionStatusRequest)    returns (Response);
+  rpc GetGeoInfo             (GetGeoInfoRequest)             returns (GeoInfo);
+  rpc ClearAppsCache         (ClearAppsCacheRequest)         returns (Response);
+  rpc RepairOpenVPNInterface (RepairOpenVPNInterfaceRequest) returns (Response);
+  rpc RepairWANMiniport      (RepairWANMiniportRequest)      returns (Response);
+  rpc EnableRASServices      (EnableRASServicesRequest)      returns (Response);
+  rpc RepairL2TPInterface    (RepairL2TPInterfaceRequest)    returns (Response);
+  rpc RepairPPTPInterface    (RepairPPTPInterfaceRequest)    returns (Response);
+  rpc RunNetworkReset        (RunNetworkResetRequest)        returns (Response);
+  rpc FlushDns               (FlushDnsRequest)               returns (Response);
+  rpc DisableSystemProxy     (DisableSystemProxyRequest)     returns (Response);
+  rpc DisableConnectionProxy (DisableConnectionProxyRequest) returns (Response);
+}
+
+// ---- Shared messages -------------------------------------------------------
+
+// VPN account credentials. Sent in cleartext over the loopback channel.
+message Auth {
+  string username  = 1;
+  string password  = 2;
+  string uniqueId  = 3;
+  string token     = 4;
+}
+
+// One split-tunnel target application.
+message App {
+  string name                 = 1;
+  repeated string processNames = 2;  // e.g. ["game.exe"]
+  repeated string dirNames     = 3;  // install-dir name hints
+}
+
+// Uniform reply used by every RPC except GetGeoInfo.
+// For GetConnectionStatus, `status` == "is connected".
+message Response {
+  bool   status       = 1;
+  string message      = 2;
+  string appNotFound  = 3;
+  string pathNotFound = 4;
+}
+
+// ---- Connect requests ------------------------------------------------------
+
+message ConnectOvpnRequest {
+  Auth   auth              = 1;
+  string ovpnConfig        = 2;  // raw .ovpn text (from /panel/ovpn)
+  string mode              = 3;  // tunnel mode (normal / inverse / separator)
+  string connectionAdapter = 4;  // VPN-side adapter
+  string directAdapter     = 5;  // physical adapter
+  repeated App    apps       = 6;  // split-tunnel apps (resolved exe paths)
+  repeated string appsCustom = 7;  // extra raw exe paths
+}
+
+// L2TP and PPTP use separate but byte-identical request messages.
+message ConnectL2tpRequest {
+  Auth   auth              = 1;
+  string serverAddr        = 2;  // server IP/host (no inline config)
+  string mode              = 3;
+  string connectionAdapter = 4;
+  string directAdapter     = 5;
+  repeated App    apps       = 6;
+  repeated string appsCustom = 7;
+}
+
+message ConnectPptpRequest {
+  Auth   auth              = 1;
+  string serverAddr        = 2;
+  string mode              = 3;
+  string connectionAdapter = 4;
+  string directAdapter     = 5;
+  repeated App    apps       = 6;
+  repeated string appsCustom = 7;
+}
+
+// ---- Other request messages ------------------------------------------------
+
+message GetConnectionStatusRequest {
+  string type = 1;  // "ovpn" | "l2tp" | "pptp"
+}
+
+message DisableConnectionProxyRequest {
+  string connectionName = 1;  // RAS connection name
+}
+
+// ---- GetGeoInfo response ---------------------------------------------------
+
+message GeoInfo {
+  string ip      = 1;
+  string country = 2;
+  string city    = 3;
+  double lat     = 4;
+  double lon     = 5;
+}
+
+// ---- Empty requests --------------------------------------------------------
+// The codec emits a distinct (empty) message type per no-arg RPC; names are not
+// preserved in the build, so they're reconstructed here. All are field-empty.
+message DisconnectOvpnRequest         {}
+message DisconnectL2tpRequest         {}
+message DisconnectPptpRequest         {}
+message GetGeoInfoRequest             {}
+message ClearAppsCacheRequest         {}
+message RepairOpenVPNInterfaceRequest {}
+message RepairWANMiniportRequest      {}
+message EnableRASServicesRequest      {}
+message RepairL2TPInterfaceRequest    {}
+message RepairPPTPInterfaceRequest    {}
+message RunNetworkResetRequest        {}
+message FlushDnsRequest               {}
+message DisableSystemProxyRequest     {}
