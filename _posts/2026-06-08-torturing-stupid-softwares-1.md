@@ -1,6 +1,6 @@
 ---
 title: "Torturing Stupid Softwares — Part 1: PacketRaft.ir"
-date: 2026-06-09
+date: 2026-06-08
 author: b00tkitism
 tags: [reverse-engineering, rust, reqwest, rustls, wireguard, tls, ida]
 ---
